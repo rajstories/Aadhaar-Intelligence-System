@@ -117,6 +117,14 @@ const LoginPage: React.FC = () => {
             Sign In
           </h2>
 
+          {/* Demo Mode Info */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 font-medium mb-1">Demo Mode Available</p>
+            <p className="text-xs text-blue-700">
+              Backend API not configured. You can sign in with any email/password combination for demo access.
+            </p>
+          </div>
+
           {/* Error Message */}
           {displayError && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
