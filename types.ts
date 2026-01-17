@@ -104,38 +104,54 @@ export interface HeatmapResponse {
 }
 
 // ============================================
-// CHARTS & VISUALS DATA
+// CHARTS & VISUALS DATA (Chart.js Compatible - Zero Transformation)
 // ============================================
-export interface TimeSeriesPoint {
-  date: string;
-  value: number;
-  label?: string;
-}
 
+/**
+ * Chart.js compatible dataset format
+ * Backend returns this format directly - no frontend transformation needed
+ */
 export interface ChartDataset {
-  label: string;
+  label?: string;
   data: number[];
   backgroundColor?: string | string[];
-  borderColor?: string;
+  borderColor?: string | string[];
+  borderWidth?: number;
+  tension?: number;
+  fill?: boolean;
 }
 
-export interface VisualsResponse {
-  lineChart?: {
-    title: string;
-    labels: string[];
-    datasets: ChartDataset[];
-  };
-  barChart?: {
-    title: string;
-    labels: string[];
-    datasets: ChartDataset[];
-  };
-  pieChart?: {
-    title: string;
-    labels: string[];
+/**
+ * Line/Bar Chart data format
+ * Directly compatible with Chart.js data prop
+ */
+export interface LineBarChartData {
+  labels: string[];
+  datasets: ChartDataset[];
+}
+
+/**
+ * Pie/Doughnut Chart data format  
+ * Directly compatible with Chart.js data prop
+ */
+export interface PieChartData {
+  labels: string[];
+  datasets: {
     data: number[];
-    backgroundColor: string[];
-  };
+    backgroundColor?: string[];
+    borderColor?: string[];
+    borderWidth?: number;
+  }[];
+}
+
+/**
+ * Visuals API Response
+ * All chart data is Chart.js compatible - zero transformation required
+ */
+export interface VisualsResponse {
+  lineChart?: LineBarChartData & { title?: string };
+  barChart?: LineBarChartData & { title?: string };
+  pieChart?: PieChartData & { title?: string };
 }
 
 // ============================================

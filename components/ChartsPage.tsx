@@ -152,43 +152,11 @@ const ChartsPage: React.FC = () => {
     },
   };
 
-  // Prepare chart data
-  const lineChartData = visualsData?.lineChart
-    ? {
-        labels: visualsData.lineChart.labels,
-        datasets: visualsData.lineChart.datasets.map((ds, idx) => ({
-          ...ds,
-          borderColor: ds.borderColor || ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b'][idx % 4],
-          backgroundColor: ds.backgroundColor || `${['#3b82f6', '#ef4444', '#22c55e', '#f59e0b'][idx % 4]}20`,
-          tension: 0.3,
-          fill: true,
-        })),
-      }
-    : null;
-
-  const barChartData = visualsData?.barChart
-    ? {
-        labels: visualsData.barChart.labels,
-        datasets: visualsData.barChart.datasets.map((ds, idx) => ({
-          ...ds,
-          backgroundColor: ds.backgroundColor || ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b'][idx % 4],
-        })),
-      }
-    : null;
-
-  const pieChartData = visualsData?.pieChart
-    ? {
-        labels: visualsData.pieChart.labels,
-        datasets: [
-          {
-            data: visualsData.pieChart.data,
-            backgroundColor: visualsData.pieChart.backgroundColor,
-            borderWidth: 2,
-            borderColor: '#fff',
-          },
-        ],
-      }
-    : null;
+  // Chart data - directly from backend (zero transformation)
+  // Backend returns Chart.js compatible format
+  const lineChartData = visualsData?.lineChart || null;
+  const barChartData = visualsData?.barChart || null;
+  const pieChartData = visualsData?.pieChart || null;
 
   return (
     <div className="space-y-6">
@@ -300,49 +268,54 @@ const ChartsPage: React.FC = () => {
   );
 };
 
-// Generate mock visuals data for demo
+/**
+ * Generate mock visuals data for demo
+ * Format matches exact backend response (Chart.js compatible)
+ */
 function generateMockVisualsData(): VisualsResponse {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const states = ['UP', 'MH', 'BR', 'WB', 'MP', 'TN', 'RJ', 'GJ'];
-
   return {
+    // Line Chart - Chart.js compatible format
     lineChart: {
-      title: 'Monthly Trend - Demand Pressure & Operational Stress',
-      labels: months,
+      title: 'Monthly Trend - Demand Pressure Index',
+      labels: ['Jan', 'Feb', 'Mar', 'Apr'],
       datasets: [
         {
           label: 'Demand Pressure Index',
-          data: months.map(() => 40 + Math.random() * 40),
+          data: [52, 58, 61, 67],
           borderColor: '#3b82f6',
           backgroundColor: '#3b82f620',
-        },
-        {
-          label: 'Operational Stress Index',
-          data: months.map(() => 30 + Math.random() * 35),
-          borderColor: '#ef4444',
-          backgroundColor: '#ef444420',
+          tension: 0.3,
+          fill: true,
         },
       ],
     },
+    // Bar Chart - Chart.js compatible format
     barChart: {
-      title: 'State-wise Composite Risk Index',
-      labels: states,
+      title: 'State-wise Composite Risk',
+      labels: ['UP', 'MH', 'BR', 'WB', 'MP', 'TN'],
       datasets: [
         {
-          label: 'Composite Risk',
-          data: states.map(() => 30 + Math.random() * 50),
+          label: 'Composite Risk Index',
+          data: [78, 62, 81, 59, 58, 38],
           backgroundColor: [
-            '#dc2626', '#f59e0b', '#dc2626', '#22c55e',
-            '#f59e0b', '#22c55e', '#22c55e', '#22c55e',
+            '#dc2626', '#f59e0b', '#dc2626', 
+            '#f59e0b', '#f59e0b', '#22c55e',
           ],
         },
       ],
     },
+    // Pie Chart - Chart.js compatible format
     pieChart: {
       title: 'District Status Distribution',
       labels: ['Critical', 'Watch', 'Normal'],
-      data: [127, 234, 389],
-      backgroundColor: ['#dc2626', '#f59e0b', '#22c55e'],
+      datasets: [
+        {
+          data: [23, 41, 108],
+          backgroundColor: ['#dc2626', '#f59e0b', '#22c55e'],
+          borderColor: ['#fff', '#fff', '#fff'],
+          borderWidth: 2,
+        },
+      ],
     },
   };
 }
