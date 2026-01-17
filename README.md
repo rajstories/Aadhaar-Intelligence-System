@@ -195,32 +195,6 @@ The application is designed to work with a backend API. API endpoints expected:
 - **Normal** (20-40): Green
 - **Low** (0-20): Cyan
 
-## 🔐 Security Considerations
-
-This is a **frontend-only** application. For production deployment:
-
-1. Implement proper authentication/authorization
-2. Secure API endpoints with appropriate access controls
-3. Use HTTPS for all communications
-4. Implement rate limiting on backend APIs
-5. Validate and sanitize all user inputs on the backend
-6. Consider data sensitivity and compliance requirements
-
-## 🤝 Contributing
-
-This is a conversion of an existing Delhi Pollution dashboard to the Aadhaar Intelligence System. The codebase maintains the original UI/UX structure while adapting data models, labels, and logic.
-
-## 📝 License
-
-[Add your license information here]
-
-## 👥 Authors
-
-- Original Dashboard: Delhi Pollution Command Center
-- Conversion & Integration: [Your Name/Organization]
-- Co-Authored-By: Warp <agent@warp.dev>
-
-## 📞 Support
 
 For issues, questions, or contributions, please open an issue on GitHub.
 
