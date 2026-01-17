@@ -2,6 +2,8 @@ import React, { useState, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import LoginPage from './components/LoginPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ViewState } from './types';
 import { COLORS } from './constants';
 
@@ -20,7 +22,16 @@ const LoadingFallback = () => (
   </div>
 );
 
-const App: React.FC = () => {
+// Full screen loading for auth check
+const AuthLoadingScreen = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900">
+    <Loader2 className="h-10 w-10 animate-spin text-blue-500 mb-4" />
+    <p className="text-slate-400 text-sm">Verifying authentication...</p>
+  </div>
+);
+
+// Protected dashboard content
+const DashboardContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
 
   const renderContent = () => {
@@ -60,6 +71,32 @@ const App: React.FC = () => {
         </div>
       </main>
     </div>
+  );
+};
+
+// Main app with auth routing
+const AppContent: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading screen while checking auth
+  if (isLoading) {
+    return <AuthLoadingScreen />;
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  // Show dashboard if authenticated
+  return <DashboardContent />;
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

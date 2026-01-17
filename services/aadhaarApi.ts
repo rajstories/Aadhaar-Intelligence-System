@@ -16,10 +16,32 @@ import {
   AadhaarAlert,
   PolicyFramework,
   ReportMetadata,
+  SearchResponse,
+  NotificationResponse,
+  HealthSummary,
 } from '../types';
+import { getAuthToken, clearAuthData } from './authApi';
 
 // Base API URL - can be configured via environment variable
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
+// Event for auth errors (401)
+const AUTH_ERROR_EVENT = 'auth:unauthorized';
+
+/**
+ * Dispatch auth error event for App to handle redirect
+ */
+function dispatchAuthError(): void {
+  window.dispatchEvent(new CustomEvent(AUTH_ERROR_EVENT));
+}
+
+/**
+ * Subscribe to auth error events
+ */
+export function onAuthError(callback: () => void): () => void {
+  window.addEventListener(AUTH_ERROR_EVENT, callback);
+  return () => window.removeEventListener(AUTH_ERROR_EVENT, callback);
+}
 
 /**
  * Helper to build query string from filters
@@ -40,16 +62,26 @@ function buildQueryString(filters: AppliedFilters): string {
 }
 
 /**
- * Generic fetch wrapper with error handling
+ * Generic fetch wrapper with error handling and auth
  */
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const token = getAuthToken();
+  
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
     ...options,
   });
+
+  // Handle 401 Unauthorized - redirect to login
+  if (response.status === 401) {
+    clearAuthData();
+    dispatchAuthError();
+    throw new Error('Session expired. Please login again.');
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -202,4 +234,73 @@ export function getReportDownloadUrl(report: ReportMetadata): string {
     return report.fileUrl;
   }
   return `${API_BASE_URL}/reports/${report.id}/download`;
+}
+
+// ============================================
+// SEARCH
+// ============================================
+
+/**
+ * Search across states, districts, alerts
+ * GET /api/search?q={query}
+ */
+export async function search(query: string): Promise<SearchResponse> {
+  const encodedQuery = encodeURIComponent(query);
+  return apiFetch<SearchResponse>(`/search?q=${encodedQuery}`);
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+/**
+ * Fetch notifications (alerts/notifications)
+ * GET /api/alerts/notifications
+ */
+export async function fetchNotifications(): Promise<NotificationResponse> {
+  return apiFetch<NotificationResponse>('/alerts/notifications');
+}
+
+/**
+ * Mark notification as read
+ * POST /api/alerts/notifications/{id}/read
+ */
+export async function markNotificationRead(id: string): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/alerts/notifications/${id}/read`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * Mark all notifications as read
+ * POST /api/alerts/notifications/read-all
+ */
+export async function markAllNotificationsRead(): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>('/alerts/notifications/read-all', {
+    method: 'POST',
+  });
+}
+
+// ============================================
+// HEALTH SUMMARY
+// ============================================
+
+/**
+ * Fetch nationwide health summary
+ * GET /api/dashboard/health-summary
+ */
+export async function fetchHealthSummary(): Promise<HealthSummary> {
+  return apiFetch<HealthSummary>('/dashboard/health-summary');
+}
+
+/**
+ * Get last sync information
+ * GET /api/dashboard/sync-status
+ */
+export async function fetchSyncStatus(): Promise<{
+  lastSyncTime: string;
+  status: 'success' | 'failed' | 'in_progress';
+  message?: string;
+}> {
+  return apiFetch('/dashboard/sync-status');
 }

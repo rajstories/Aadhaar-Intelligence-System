@@ -204,6 +204,93 @@ export enum ViewState {
 }
 
 // ============================================
+// AUTHENTICATION TYPES
+// ============================================
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'viewer' | 'analyst';
+  avatar?: string;
+  department?: string;
+  lastLogin?: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt: number; // Unix timestamp
+}
+
+export interface GoogleAuthPayload {
+  credential: string; // Google OAuth token
+}
+
+// ============================================
+// SEARCH TYPES
+// ============================================
+export type SearchResultType = 'state' | 'district' | 'alert';
+
+export interface SearchResult {
+  id: string;
+  type: SearchResultType;
+  title: string;
+  subtitle?: string;
+  status?: RegionStatus;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SearchResponse {
+  query: string;
+  results: SearchResult[];
+  totalCount: number;
+}
+
+// ============================================
+// NOTIFICATION TYPES
+// ============================================
+export interface Notification {
+  id: string;
+  type: 'emergency' | 'warning' | 'info' | 'success';
+  title: string;
+  message: string;
+  region?: string;
+  timestamp: string;
+  isRead: boolean;
+  link?: string;
+}
+
+export interface NotificationResponse {
+  notifications: Notification[];
+  unreadCount: number;
+}
+
+// ============================================
+// HEALTH SUMMARY (Dashboard Widget)
+// ============================================
+export interface HealthSummary {
+  majorAnomaliesCount: number;
+  systemStressLevel: 'Low' | 'Moderate' | 'High' | 'Critical';
+  nationalRiskTrend: TrendDirection;
+  criticalStatesCount: number;
+  watchStatesCount: number;
+  lastUpdated: string;
+}
+
+// ============================================
 // LEGACY TYPES (kept for compatibility during migration)
 // ============================================
 export interface Metric {

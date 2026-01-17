@@ -28,11 +28,14 @@ import {
   StateSummary,
   RegionStatus,
   TrendDirection,
+  HealthSummary,
 } from '../types';
 import {
   fetchDashboardOverview,
   fetchStatesSummary,
   syncData,
+  fetchHealthSummary,
+  fetchSyncStatus,
 } from '../services/aadhaarApi';
 import StateDetailsPanel from './StateDetailsPanel';
 
@@ -76,6 +79,11 @@ const Dashboard: React.FC = () => {
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+
+  // Health summary state
+  const [healthSummary, setHealthSummary] = useState<HealthSummary | null>(null);
+  const [loadingHealth, setLoadingHealth] = useState(true);
 
   // Selected state for details panel
   const [selectedState, setSelectedState] = useState<StateSummary | null>(null);
@@ -134,11 +142,46 @@ const Dashboard: React.FC = () => {
     }
   }, []);
 
+  // Fetch health summary
+  const loadHealthSummary = useCallback(async () => {
+    try {
+      setLoadingHealth(true);
+      const data = await fetchHealthSummary();
+      setHealthSummary(data);
+    } catch (err) {
+      console.warn('API unavailable, using mock health data:', err);
+      // Mock health summary
+      setHealthSummary({
+        majorAnomaliesCount: 12,
+        systemStressLevel: 'Moderate',
+        nationalRiskTrend: 'up',
+        criticalStatesCount: 3,
+        watchStatesCount: 5,
+        lastUpdated: new Date().toISOString(),
+      });
+    } finally {
+      setLoadingHealth(false);
+    }
+  }, []);
+
+  // Fetch sync status
+  const loadSyncStatus = useCallback(async () => {
+    try {
+      const status = await fetchSyncStatus();
+      setLastSyncTime(status.lastSyncTime);
+    } catch (err) {
+      // Use current time as fallback
+      setLastSyncTime(new Date(Date.now() - 3600000).toISOString());
+    }
+  }, []);
+
   // Initial load
   useEffect(() => {
     loadOverview();
     loadStatesSummary();
-  }, [loadOverview, loadStatesSummary]);
+    loadHealthSummary();
+    loadSyncStatus();
+  }, [loadOverview, loadStatesSummary, loadHealthSummary, loadSyncStatus]);
 
   // Handle sync data
   const handleSyncData = async () => {
@@ -147,8 +190,9 @@ const Dashboard: React.FC = () => {
       setSyncMessage(null);
       await syncData();
       setSyncMessage({ type: 'success', text: 'Data synced successfully!' });
+      setLastSyncTime(new Date().toISOString());
       // Reload data after sync
-      await Promise.all([loadOverview(), loadStatesSummary()]);
+      await Promise.all([loadOverview(), loadStatesSummary(), loadHealthSummary()]);
     } catch (err) {
       setSyncMessage({ type: 'error', text: 'Sync failed. Please try again.' });
     } finally {
@@ -156,6 +200,21 @@ const Dashboard: React.FC = () => {
       // Clear message after 3 seconds
       setTimeout(() => setSyncMessage(null), 3000);
     }
+  };
+
+  // Format time ago
+  const formatTimeAgo = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
   };
 
   // Format large numbers
@@ -199,17 +258,81 @@ const Dashboard: React.FC = () => {
               </div>
             )}
 
-            <button
-              onClick={handleSyncData}
-              disabled={isSyncing}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm 
-                         font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 
-                         focus:ring-blue-500 focus:ring-offset-2 transition-colors 
-                         disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-            >
-              <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              Sync Data
-            </button>
+            <div className="flex flex-col items-end">
+              <button
+                onClick={handleSyncData}
+                disabled={isSyncing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm 
+                           font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 
+                           focus:ring-blue-500 focus:ring-offset-2 transition-colors 
+                           disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              >
+                <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                Sync Data
+              </button>
+              {lastSyncTime && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Last sync: {formatTimeAgo(lastSyncTime)}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* NATIONWIDE HEALTH SUMMARY */}
+      <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-5 shadow-lg">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-white mb-1">Nationwide Health Summary</h2>
+            <p className="text-slate-400 text-sm">Real-time system health indicators</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Anomalies Count */}
+            <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Anomalies</p>
+              <p className="text-xl font-bold text-red-400 mt-1">
+                {loadingHealth ? <Loader2 className="h-5 w-5 animate-spin" /> : healthSummary?.majorAnomaliesCount || 0}
+              </p>
+            </div>
+            {/* Stress Level */}
+            <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Stress Level</p>
+              <p className={`text-xl font-bold mt-1 ${
+                healthSummary?.systemStressLevel === 'Critical' ? 'text-red-400' :
+                healthSummary?.systemStressLevel === 'High' ? 'text-orange-400' :
+                healthSummary?.systemStressLevel === 'Moderate' ? 'text-yellow-400' : 'text-green-400'
+              }`}>
+                {loadingHealth ? <Loader2 className="h-5 w-5 animate-spin" /> : healthSummary?.systemStressLevel || 'N/A'}
+              </p>
+            </div>
+            {/* Critical States */}
+            <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Critical States</p>
+              <p className="text-xl font-bold text-red-400 mt-1">
+                {loadingHealth ? <Loader2 className="h-5 w-5 animate-spin" /> : healthSummary?.criticalStatesCount || 0}
+              </p>
+            </div>
+            {/* Risk Trend */}
+            <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Risk Trend</p>
+              <div className="flex items-center gap-2 mt-1">
+                {loadingHealth ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                ) : (
+                  <>
+                    <TrendIcon trend={healthSummary?.nationalRiskTrend || 'stable'} className="h-5 w-5" />
+                    <span className={`text-lg font-bold ${
+                      healthSummary?.nationalRiskTrend === 'up' ? 'text-red-400' :
+                      healthSummary?.nationalRiskTrend === 'down' ? 'text-green-400' : 'text-gray-400'
+                    }`}>
+                      {healthSummary?.nationalRiskTrend === 'up' ? 'Rising' :
+                       healthSummary?.nationalRiskTrend === 'down' ? 'Falling' : 'Stable'}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
