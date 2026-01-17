@@ -122,6 +122,21 @@ npm run dev
 http://localhost:3001
 ```
 
+### Demo Mode (No Backend Required)
+
+The application includes a **demo mode** that allows you to test all features without a backend API:
+
+1. Start the dev server (as shown above)
+2. On the login page, enter any email and password
+3. Click "Sign In" - you'll be logged in automatically with demo data
+4. All pages work with mock data fallbacks
+
+**Demo credentials examples:**
+- Email: `admin@uidai.gov.in` / Password: `anything`
+- Email: `test@uidai.gov.in` / Password: `demo`
+
+The system will create a demo user based on your email and store it in sessionStorage.
+
 ### Build for Production
 
 ```bash
